@@ -3,13 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Fleet Tracker Lite API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: Auth
+    description: Browser and mobile authentication endpoints.
+  - name: trucks
+    description: Truck management
+  - name: drivers
+    description: Driver management
+  - name: trips
+    description: Trip management
+  - name: tracking
+    description: Live GPS tracking
+  - name: alerts
+    description: Fleet alerts
+  - name: dashboard
+    description: Dashboard analytics
 paths:
   /healthz:
     get:
@@ -24,7 +38,582 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Auth status resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserEnvelope'
+
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser OIDC login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to the OIDC authorization endpoint.
+
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser OIDC login flow
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: iss
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        '302':
+          description: Redirect to the returnTo path on success.
+
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the session and begin OIDC logout
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '302':
+          description: Redirect to the OIDC provider logout URL.
+
+  /mobile-auth/token-exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MobileTokenExchangeRequest'
+      responses:
+        '200':
+          description: Session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileTokenExchangeSuccess'
+
+  /mobile-auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session token
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutSuccess'
+
+  /trucks:
+    get:
+      operationId: listTrucks
+      tags: [trucks]
+      summary: List all trucks
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of trucks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Truck"
+    post:
+      operationId: createTruck
+      tags: [trucks]
+      summary: Add a new truck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TruckInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Truck"
+
+  /trucks/{id}:
+    get:
+      operationId: getTruck
+      tags: [trucks]
+      summary: Get truck details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Truck details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Truck"
+        "404":
+          description: Not found
+    put:
+      operationId: updateTruck
+      tags: [trucks]
+      summary: Update a truck
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TruckUpdate"
+      responses:
+        "200":
+          description: Updated truck
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Truck"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTruck
+      tags: [trucks]
+      summary: Delete a truck
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /drivers:
+    get:
+      operationId: listDrivers
+      tags: [drivers]
+      summary: List all drivers
+      parameters:
+        - name: available
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of drivers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Driver"
+    post:
+      operationId: createDriver
+      tags: [drivers]
+      summary: Add a new driver
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Driver"
+
+  /drivers/{id}:
+    get:
+      operationId: getDriver
+      tags: [drivers]
+      summary: Get driver details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Driver details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Driver"
+        "404":
+          description: Not found
+    put:
+      operationId: updateDriver
+      tags: [drivers]
+      summary: Update a driver
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverUpdate"
+      responses:
+        "200":
+          description: Updated driver
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Driver"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteDriver
+      tags: [drivers]
+      summary: Delete a driver
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /trips:
+    get:
+      operationId: listTrips
+      tags: [trips]
+      summary: List all trips
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: driverId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: truckId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of trips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trip"
+    post:
+      operationId: createTrip
+      tags: [trips]
+      summary: Create a new trip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+
+  /trips/{id}:
+    get:
+      operationId: getTrip
+      tags: [trips]
+      summary: Get trip details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trip details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "404":
+          description: Not found
+    put:
+      operationId: updateTrip
+      tags: [trips]
+      summary: Update a trip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripUpdate"
+      responses:
+        "200":
+          description: Updated trip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTrip
+      tags: [trips]
+      summary: Delete a trip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /trips/{id}/start:
+    post:
+      operationId: startTrip
+      tags: [trips]
+      summary: Start a trip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trip started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "404":
+          description: Not found
+
+  /trips/{id}/complete:
+    post:
+      operationId: completeTrip
+      tags: [trips]
+      summary: Mark a trip as completed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trip completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "404":
+          description: Not found
+
+  /trips/{id}/locations:
+    get:
+      operationId: getTripLocations
+      tags: [tracking]
+      summary: Get location history for a trip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Location history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripLocation"
+    post:
+      operationId: addTripLocation
+      tags: [tracking]
+      summary: Add a GPS location point (simulation)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocationInput"
+      responses:
+        "201":
+          description: Location recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripLocation"
+
+  /tracking/live:
+    get:
+      operationId: getLiveTracking
+      tags: [tracking]
+      summary: Get latest positions for all active trucks
+      responses:
+        "200":
+          description: Live tracking data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LiveTruckPosition"
+
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List alerts
+      parameters:
+        - name: unreadOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}/read:
+    patch:
+      operationId: markAlertRead
+      tags: [alerts]
+      summary: Mark an alert as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Alert updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get fleet dashboard statistics
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
 components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      description: Opaque session token — `Bearer <sid>`.
+      schema:
+        type: string
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      description: Browser session cookie.
+      schema:
+        type: string
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +623,406 @@ components:
       required:
         - status
 
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id:
+          type: string
+        email:
+          type: ["string", "null"]
+          format: email
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: '#/components/schemas/AuthUser'
+            - type: 'null'
+
+    MobileTokenExchangeRequest:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code:
+          type: string
+          minLength: 1
+        code_verifier:
+          type: string
+          minLength: 1
+        redirect_uri:
+          type: string
+          minLength: 1
+          format: uri
+        state:
+          type: string
+          minLength: 1
+        nonce:
+          type: string
+          minLength: 1
+
+    MobileTokenExchangeSuccess:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    LogoutSuccess:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          const: true
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    Truck:
+      type: object
+      required: [id, registrationNumber, model, capacity, fuelType, status, createdAt]
+      properties:
+        id:
+          type: integer
+        registrationNumber:
+          type: string
+        model:
+          type: string
+        capacity:
+          type: number
+        fuelType:
+          type: string
+        status:
+          type: string
+          enum: [available, assigned, running, maintenance]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: ["string", "null"]
+
+    TruckInput:
+      type: object
+      required: [registrationNumber, model, capacity, fuelType]
+      properties:
+        registrationNumber:
+          type: string
+          minLength: 1
+        model:
+          type: string
+          minLength: 1
+        capacity:
+          type: number
+        fuelType:
+          type: string
+          enum: [diesel, petrol, electric, hybrid]
+        notes:
+          type: string
+
+    TruckUpdate:
+      type: object
+      properties:
+        registrationNumber:
+          type: string
+          minLength: 1
+        model:
+          type: string
+          minLength: 1
+        capacity:
+          type: number
+        fuelType:
+          type: string
+          enum: [diesel, petrol, electric, hybrid]
+        status:
+          type: string
+          enum: [available, assigned, running, maintenance]
+        notes:
+          type: string
+
+    Driver:
+      type: object
+      required: [id, name, licenseNumber, phone, address, experienceYears, isAvailable, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        licenseNumber:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        experienceYears:
+          type: integer
+        isAvailable:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: ["string", "null"]
+
+    DriverInput:
+      type: object
+      required: [name, licenseNumber, phone, address, experienceYears]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        licenseNumber:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+        address:
+          type: string
+          minLength: 1
+        experienceYears:
+          type: integer
+          minimum: 0
+
+    DriverUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        licenseNumber:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+        address:
+          type: string
+          minLength: 1
+        experienceYears:
+          type: integer
+          minimum: 0
+        isAvailable:
+          type: boolean
+
+    Trip:
+      type: object
+      required: [id, pickupLocation, destination, status, createdAt]
+      properties:
+        id:
+          type: integer
+        pickupLocation:
+          type: string
+        pickupLat:
+          type: ["number", "null"]
+        pickupLng:
+          type: ["number", "null"]
+        destination:
+          type: string
+        destLat:
+          type: ["number", "null"]
+        destLng:
+          type: ["number", "null"]
+        truckId:
+          type: ["integer", "null"]
+        driverId:
+          type: ["integer", "null"]
+        truckRegistration:
+          type: ["string", "null"]
+        driverName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, started, running, completed, cancelled]
+        distanceCovered:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    TripInput:
+      type: object
+      required: [pickupLocation, destination]
+      properties:
+        pickupLocation:
+          type: string
+          minLength: 1
+        pickupLat:
+          type: number
+        pickupLng:
+          type: number
+        destination:
+          type: string
+          minLength: 1
+        destLat:
+          type: number
+        destLng:
+          type: number
+        truckId:
+          type: integer
+        driverId:
+          type: integer
+        notes:
+          type: string
+
+    TripUpdate:
+      type: object
+      properties:
+        pickupLocation:
+          type: string
+          minLength: 1
+        pickupLat:
+          type: number
+        pickupLng:
+          type: number
+        destination:
+          type: string
+          minLength: 1
+        destLat:
+          type: number
+        destLng:
+          type: number
+        truckId:
+          type: ["integer", "null"]
+        driverId:
+          type: ["integer", "null"]
+        status:
+          type: string
+          enum: [pending, started, running, completed, cancelled]
+        notes:
+          type: string
+
+    TripLocation:
+      type: object
+      required: [id, tripId, lat, lng, recordedAt]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        lat:
+          type: number
+        lng:
+          type: number
+        speed:
+          type: ["number", "null"]
+        recordedAt:
+          type: string
+          format: date-time
+
+    LocationInput:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+        speed:
+          type: number
+
+    LiveTruckPosition:
+      type: object
+      required: [tripId, truckId, truckRegistration, driverName, lat, lng, status, recordedAt]
+      properties:
+        tripId:
+          type: integer
+        truckId:
+          type: integer
+        truckRegistration:
+          type: string
+        driverName:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        speed:
+          type: ["number", "null"]
+        status:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+
+    Alert:
+      type: object
+      required: [id, type, message, isRead, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [trip_started, trip_completed, truck_delayed, overspeed, truck_offline]
+        message:
+          type: string
+        tripId:
+          type: ["integer", "null"]
+        truckId:
+          type: ["integer", "null"]
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    DashboardStats:
+      type: object
+      required: [totalTrucks, availableTrucks, runningTrips, completedTrips, activeDrivers, delayedTrips, monthlyTrips, truckUtilization]
+      properties:
+        totalTrucks:
+          type: integer
+        availableTrucks:
+          type: integer
+        runningTrips:
+          type: integer
+        completedTrips:
+          type: integer
+        activeDrivers:
+          type: integer
+        delayedTrips:
+          type: integer
+        unreadAlerts:
+          type: integer
+        monthlyTrips:
+          type: array
+          items:
+            type: object
+            required: [month, count]
+            properties:
+              month:
+                type: string
+              count:
+                type: integer
+        truckUtilization:
+          type: array
+          items:
+            type: object
+            required: [status, count]
+            properties:
+              status:
+                type: string
+              count:
+                type: integer

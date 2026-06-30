@@ -1,0 +1,322 @@
+Product Requirements Document (PRD)
+Project Title
+
+Fleet Tracker Lite – Vehicle Tracking & Trip Management System
+
+Version: 1.0
+
+Project Type: Full Stack Web Application
+
+Backend: Rust (Axum)
+
+Frontend: Next.js + Tailwind CSS
+
+Database: PostgreSQL
+
+Maps: Leaflet + OpenStreetMap
+
+Authentication: JWT
+
+1. Executive Summary
+
+Fleet Tracker Lite is a web-based fleet management application that enables transport companies to manage trucks, drivers, and trips while simulating real-time vehicle tracking on a map.
+
+The application is designed for educational purposes and portfolio demonstrations. It simulates GPS data without requiring physical GPS hardware, allowing the entire system to run on a single laptop.
+
+2. Problem Statement
+
+Small and medium transport companies often struggle with:
+
+Tracking active trips
+Managing trucks and drivers
+Monitoring trip progress
+Viewing vehicle locations
+Generating operational reports
+
+Fleet Tracker Lite provides a centralized platform to simplify these operations.
+
+3. Objectives
+Manage trucks
+Manage drivers
+Assign trucks to drivers
+Create delivery trips
+Simulate live truck tracking
+Display trucks on an interactive map
+Generate reports
+Maintain trip history
+4. Target Users
+Fleet Managers
+Transport Companies
+Logistics Companies
+Small Delivery Businesses
+5. User Roles
+Admin
+
+Responsibilities:
+
+Manage users
+Manage trucks
+Manage drivers
+View all trips
+Generate reports
+Fleet Manager
+
+Responsibilities:
+
+Assign drivers
+Assign trucks
+Create trips
+Track live vehicles
+View reports
+Driver
+
+Responsibilities:
+
+Login
+View assigned trips
+Start trip
+Complete trip
+Update trip status
+6. Functional Modules
+Module 1 — Authentication
+
+Features:
+
+Login
+Logout
+JWT Authentication
+Password Encryption
+Role-Based Access Control
+Module 2 — Dashboard
+
+Dashboard Cards:
+
+Total Trucks
+Available Trucks
+Running Trips
+Completed Trips
+Active Drivers
+Delayed Trips
+
+Charts:
+
+Monthly Trips
+Truck Utilization
+Driver Performance
+Module 3 — Truck Management
+
+Features:
+
+Add Truck
+Edit Truck
+Delete Truck
+Search Truck
+Truck Details
+
+Truck Information:
+
+Registration Number
+Model
+Capacity
+Fuel Type
+Current Status
+
+Status:
+
+Available
+Assigned
+Running
+Maintenance
+Module 4 — Driver Management
+
+Features:
+
+Add Driver
+Edit Driver
+Delete Driver
+Search Driver
+
+Driver Details:
+
+Name
+License Number
+Phone
+Address
+Experience
+Availability
+Module 5 — Trip Management
+
+Features:
+
+Create Trip
+Assign Driver
+Assign Truck
+Set Pickup
+Set Destination
+View Trip History
+
+Trip Status:
+
+Pending
+Started
+Running
+Completed
+Cancelled
+Module 6 — Live Truck Tracking
+
+Features:
+
+Interactive Map
+Live Truck Position
+Route Visualization
+Distance Covered
+ETA (simulated)
+
+Simulation:
+
+GPS coordinates update every few seconds
+No physical GPS device required
+Module 7 — Alerts
+
+Alerts:
+
+Trip Started
+Trip Completed
+Truck Delayed
+Overspeed (simulated)
+Truck Offline (simulated)
+Module 8 — Reports
+
+Reports:
+
+Daily Trips
+Monthly Trips
+Driver Report
+Truck Utilization
+Trip Summary
+
+Export:
+
+PDF
+CSV
+7. Non-Functional Requirements
+Secure Authentication
+Fast API Response
+Responsive UI
+Mobile Friendly
+Scalable Architecture
+Error Logging
+Data Validation
+8. Database Tables
+users
+roles
+trucks
+drivers
+trips
+trip_locations
+alerts
+maintenance
+reports
+9. Technology Stack
+Frontend
+Next.js
+React
+TypeScript
+Tailwind CSS
+Leaflet
+Backend
+Rust
+Axum
+Tokio
+SQLx
+Database
+PostgreSQL
+Authentication
+JWT
+Tools
+Docker (optional)
+Git
+GitHub
+VS Code
+10. API Modules
+Authentication
+POST /login
+POST /logout
+Trucks
+GET /trucks
+POST /trucks
+PUT /trucks/{id}
+DELETE /trucks/{id}
+Drivers
+GET /drivers
+POST /drivers
+PUT /drivers/{id}
+DELETE /drivers/{id}
+Trips
+GET /trips
+POST /trips
+PUT /trips/{id}
+DELETE /trips/{id}
+Tracking
+GET /tracking/live
+GET /tracking/history
+Reports
+GET /reports
+11. Folder Structure
+fleet-tracker-lite/
+
+├── backend/
+│   ├── auth/
+│   ├── trucks/
+│   ├── drivers/
+│   ├── trips/
+│   ├── tracking/
+│   ├── reports/
+│   ├── middleware/
+│   └── main.rs
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── pages/
+│   ├── services/
+│   └── utils/
+│
+├── database/
+│   ├── migrations/
+│   └── schema.sql
+│
+├── docs/
+│
+└── README.md
+12. Project Workflow
+Admin Login
+      ↓
+Add Truck
+      ↓
+Add Driver
+      ↓
+Create Trip
+      ↓
+Assign Truck
+      ↓
+Assign Driver
+      ↓
+Driver Starts Trip
+      ↓
+GPS Simulation Begins
+      ↓
+Live Tracking
+      ↓
+Trip Completed
+      ↓
+Generate Report
+13. Future Enhancements
+AI Driver Drowsiness Detection
+Real GPS Device Integration
+Fuel Monitoring
+Geofencing
+Route Optimization
+Predictive Maintenance
+Mobile App
+Push Notifications

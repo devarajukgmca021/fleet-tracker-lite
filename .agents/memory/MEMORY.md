@@ -1,0 +1,1 @@
+- [Replit Auth web lib fix](replit-auth-web-fix.md) — replit-auth-web tsconfig must NOT include vite/client types; fix import.meta.env usage instead.
